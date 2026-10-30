@@ -12,12 +12,12 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.10" , "3.13"]
-      steps:
-        -uses: actions/checkout@v7
-        -uses: action/setup-python@v7
-        with:
+    steps:
+      -uses: actions/checkout@v7
+      -uses: action/setup-python@v7
+      with:
         pyhton-version: ${{matrix.python-version}}
 
-        -run: pip install -e ".[dev]"
-        -run: pytest 
-        -run: deploy-checkout --help
+      -run: pip install -e ".[dev]"
+      -run: pytest 
+      -run: deploy-checkout --help
