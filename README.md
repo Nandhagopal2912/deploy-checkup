@@ -6,7 +6,7 @@ Tells you, in plain language, whether your deployed app is set up safely, and ex
 
 ## Status
 
-Early development (`0.0.1`). The command-line skeleton works; no checks run yet.
+Early development (`0.0.1`). The command-line skeleton works and has tests. One placeholder check (is the URL reachable?) exists but isn't connected to the command yet.
 
 Planned for version 1: HTTPS and redirects, security headers, CORS behaviour, health and latency, cold start, and exposed files. Fix hints target Render first. See the [roadmap](docs/Deploy%20Doctor%20Roadmap.pdf).
 
@@ -37,6 +37,14 @@ deploy-checkup --help
 ```
 
 `-e` installs in editable mode, so code changes take effect without reinstalling. Re-run the install after changing `[project.scripts]` in `pyproject.toml`.
+
+## Running tests
+
+```bash
+pytest
+```
+
+Tests never touch the network. Each check receives an `httpx.Client`, and tests pass one built on `httpx.MockTransport`, which answers requests with fake responses.
 
 ## License
 
