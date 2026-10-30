@@ -27,9 +27,9 @@ def main(argv=None) -> int:
     
     args = parser.parse_args(argv)
     
-    print("Target url",{args.url})
+    print(f"Target url: {args.url}")
     if args.api:
-        print("Target api url",{args.api})
+        print(f"Target api url: {args.api}")
     
     return 0
 
