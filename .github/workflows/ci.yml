@@ -20,4 +20,4 @@ jobs:
 
       - run: pip install -e ".[dev]"
       - run: pytest 
-      - run: deploy-checkout --help
+      - run: deploy-checkup --help
