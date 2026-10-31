@@ -106,3 +106,14 @@ def test_permission_question_goes_to_stderr(capsys, monkeypatch):
     assert answer == "y"
     assert captured.err == "Own it? "
     assert captured.out == ""
+
+def test_active_question_mentions_the_burst(capsys):
+    questions = []
+
+    def remember(prompt):
+        questions.append(prompt)
+        return "n"
+
+    main(["https://example.com", "--active"], client=fake_client(healthy_site), ask=remember)
+
+    assert "rate-limit test" in questions[0]

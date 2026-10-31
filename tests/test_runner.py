@@ -48,3 +48,35 @@ def test_same_address_for_frontend_and_api_keeps_frontend_findings():
 
     assert list(results) == ["https://example.com"]
     assert any(f.check == "headers" for f in results["https://example.com"])
+
+def test_active_test_runs_on_the_api_with_permission():
+    client = fake_client(lambda request: httpx.Response(200))
+
+    results = run_checks(
+        client, "https://example.com", "https://api.example.com", probe=True, active=True
+    )
+
+    assert any(f.check == "rate_limit" for f in results["https://api.example.com"])
+    assert not any(f.check == "rate_limit" for f in results["https://example.com"])
+
+
+def test_active_test_is_skipped_without_permission():
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        return httpx.Response(200)
+
+    results = run_checks(fake_client(handler), "https://example.com", active=True)
+
+    [skipped] = [f for f in results["https://example.com"] if f.check == "rate_limit"]
+    assert skipped.level == Level.INFO
+    assert len(calls) < 20
+
+
+def test_no_active_test_unless_asked():
+    client = fake_client(lambda request: httpx.Response(200))
+
+    results = run_checks(client, "https://example.com", probe=True)
+
+    assert not any(f.check == "rate_limit" for f in results["https://example.com"])

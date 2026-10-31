@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "deploy-checkup"
-version = "0.1.1"
+version = "0.2.0"
 description = "Check whether your deployed app is set up safely, in plain language, with fixes for your host."
 readme = "README.md"
 license = "MIT"

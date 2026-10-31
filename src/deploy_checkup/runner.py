@@ -2,7 +2,7 @@ from importlib.metadata import version
 
 import httpx
 
-from deploy_checkup.checks import exposed_files
+from deploy_checkup.checks import exposed_files, rate_limit
 from deploy_checkup.checks.cors import check_cors
 from deploy_checkup.checks.headers import check_headers
 from deploy_checkup.checks.health import check_health
@@ -26,19 +26,23 @@ def run_checks(
     api_url: str | None = None,
     health_path: str = "/health",
     probe: bool = False,
+    active: bool = False,
+    rate_limit_path: str | None = None,
 ) -> dict[str, list[Finding]]:
     """Run every check and group the findings by the address they're about.
 
     probe=True also runs the probing checks, which only the site's owner should run.
+    active=True adds the active checks; they also need probe=True (the owner's permission).
     """
     frontend = check_reachable(client, url) + check_https(client, url) + check_headers(client, url)
     if probe:
         frontend += exposed_files.check_exposed_files(client, url)
     else:
         frontend.append(exposed_files.skipped())
-    results = {url: fixes_for_host(frontend, detect_host(client, url))}
+    results = {url: frontend}
 
-    if api_url and api_url != url:
+    has_api = api_url is not None and api_url != url
+    if has_api:
         # Health goes first: its first request is the one that can catch a cold start.
         api = (
             check_health(client, api_url, health_path)
@@ -47,10 +51,23 @@ def run_checks(
         )
         if probe:
             api += exposed_files.check_exposed_files(client, api_url)
-        results[api_url] = fixes_for_host(api, detect_host(client, api_url))
+        results[api_url] = api
 
-    return results
+    if active:
+        # Last, so the burst of requests can't slow down or block the other checks.
+        target = api_url if has_api else url
+        if probe:
+            results[target] += rate_limit.check_rate_limit(
+                client, target, rate_limit_path or health_path
+            )
+        else:
+            results[target].append(rate_limit.skipped())
 
+    return {
+        address: fixes_for_host(findings, detect_host(client, address))
+        for address, findings in results.items()
+    }
+    
 
 def exit_code(results: dict[str, list[Finding]]) -> int:
     """1 if anything failed, otherwise 0, so CI can stop a broken deploy."""

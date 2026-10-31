@@ -38,15 +38,32 @@ def main(
         help="skip the permission question and run the probing checks (for CI)",
     )
     parser.add_argument(
+        "--active",
+        action="store_true",
+        help="also run the active rate-limit test (sends up to 62 requests; needs your permission)",
+    )
+    parser.add_argument(
+        "--rate-limit-path",
+        help="the path the active test sends its burst to (default: the health path)",
+    )
+    parser.add_argument(
         "--json",
         action="store_true",
         help="print the findings as JSON instead of a coloured report",
     )
     args = parser.parse_args(argv)
 
-    probe = _has_permission(args.url, args.yes_i_own_it, ask)
+    probe = _has_permission(args.url, args.yes_i_own_it, args.active, ask)
     with client or make_client() as http:
-        results = run_checks(http, args.url, args.api, args.health_path, probe)
+        results = run_checks(
+            http,
+            args.url,
+            args.api,
+            args.health_path,
+            probe,
+            args.active,
+            args.rate_limit_path,
+        )
 
     if args.json:
         print(to_json(results))
@@ -55,17 +72,23 @@ def main(
     return exit_code(results)
 
 
-def _has_permission(url: str, yes_i_own_it: bool, ask: Callable[[str], str] | None) -> bool:
-    """Probing checks run only with a flag or a typed "yes"; never by accident."""
+def _has_permission(
+    url: str, yes_i_own_it: bool, active: bool, ask: Callable[[str], str] | None
+) -> bool:
+    """Probing and active checks run only with a flag or a typed "yes"; never by accident."""
     if yes_i_own_it:
         return True
     if ask is None:
         if not sys.stdin.isatty():
             return False  # nobody is there to answer, for example in CI
         ask = _ask_on_stderr
+
+    what = "exposed files like /.env"
+    if active:
+        what += " and run the rate-limit test (a burst of up to 62 requests)"
     try:
         answer = ask(
-            f"Also check {url} for exposed files like /.env? "
+            f"Also check {url} for {what}? "
             "Only say yes if you own this site or have permission to test it. [y/N] "
         )
     except EOFError:

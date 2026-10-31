@@ -28,6 +28,8 @@ deploy-checkup https://your-frontend.onrender.com --api https://your-api.onrende
 | `--api` | Your API's address, if it is separate |
 | `--health-path` | The API's health check path (default `/health`) |
 | `--yes-i-own-it` | Run the probing checks without asking (for CI) |
+| `--active` | Also run the active rate-limit test (needs your permission too) |
+| `--rate-limit-path` | The path the rate-limit test sends its burst to (default: the health path) |
 | `--json` | Print the findings as JSON instead of a coloured report |
 | `-V`, `--version` | Show the version |
 | `-h`, `--help` | Show help |
@@ -58,11 +60,28 @@ The command exits with code `1` if anything fails and `0` otherwise.
 
 ### Use it in CI
 
-Run it after each deploy, so a broken setup fails the pipeline. For example, in GitHub Actions:
+Run it after each deploy, so a broken setup fails the pipeline. In GitHub Actions, use the action:
 
 ```yaml
-- run: pip install deploy-checkup
-- run: deploy-checkup https://your-frontend.onrender.com --api https://your-api.onrender.com --yes-i-own-it
+- uses: Nandhagopal2912/deploy-checkup@v0.2.0
+  with:
+    url: https://your-frontend.onrender.com
+    api: https://your-api.onrender.com
+    i-own-it: "true"
+```
+
+| Input | Meaning |
+|---|---|
+| `url` | Your frontend's address (required) |
+| `api` | Your API's address, if it is separate |
+| `health-path` | The API's health check path (default `/health`) |
+| `i-own-it` | `"true"` also runs the probing checks. Only for apps you own or have permission to test. |
+
+Anywhere else, install and run the command directly:
+
+```bash
+pip install deploy-checkup
+deploy-checkup https://your-frontend.onrender.com --api https://your-api.onrender.com --yes-i-own-it
 ```
 
 `--yes-i-own-it` runs the probing checks without the question nobody can answer in CI. Leave it out to run only the gentle checks.
@@ -78,6 +97,7 @@ Run it after each deploy, so a broken setup fails the pipeline. For example, in 
 | **health** | API | Calls the health path 3 times. Does it exist, and what's the median response time? |
 | **cold_start** | API | Was the first of those requests much slower than the rest (a free tier waking up)? Reported as a hint, not a verdict. |
 | **exposed_files** | frontend and API | Can anyone download `/.env` or `/.git/config`? **Probing:** runs only after you confirm you own the site. |
+| **rate_limit** | API (or frontend) | Once the rate limit blocks you, does a fake `X-Forwarded-For` get you unblocked? **Active:** runs only with `--active` and your permission. |
 
 The headers check skips the API on purpose: a JSON API doesn't need CSP or X-Frame-Options, and flagging them would be a false alarm.
 
@@ -87,16 +107,28 @@ The headers check skips the API on purpose: a JSON API doesn't need CSP or X-Fra
 
 Most checks send ordinary requests any browser could send. The exposed files check asks for paths like `/.env`, which on someone else's site can look like an attack. So deploy-checkup asks *"Do you own this site?"* before running it. If nobody can answer (in CI, for example), it is skipped and the report says so, unless you pass `--yes-i-own-it`. A leaked file's contents are never shown in the report.
 
+### The active rate-limit test
+
+Many apps limit how often one visitor can call them, and identify the visitor by the `X-Forwarded-For` header. But visitors can write that header themselves. If the app trusts the first entry, anyone can bypass the limit by sending a different fake IP each time.
+
+With `--active`, deploy-checkup:
+
+1. sends normal requests until the app answers `429 Too Many Requests` (at most 60),
+2. sends one request with a fake `X-Forwarded-For: 203.0.113.7` (an address reserved for documentation, never a real visitor),
+3. sends one more normal request, to confirm you're still blocked.
+
+If the fake request gets through while you're still blocked, the limit can be bypassed. The test defaults to the health path, because it's cheap to call; never point `--rate-limit-path` at an endpoint that costs money per request. Afterwards, your own IP may stay blocked on that app for up to a minute.
+
 ### Polite by design
 
-Every request uses a 60-second timeout (Render's free tier can take about 50 seconds to wake up) and identifies itself as `User-Agent: DeployCheckup/<version>`, so site owners can see what called them. A full run sends a few dozen ordinary requests.
+Every request uses a 60-second timeout (Render's free tier can take about 50 seconds to wake up) and identifies itself as `User-Agent: DeployCheckup/<version>`, so site owners can see what called them. A normal run sends a few dozen ordinary requests; `--active` adds at most 62 more.
 
 ### What it doesn't do
 
 deploy-checkup is a quick first look, not a full security audit:
 
-- It only sends ordinary requests. It doesn't try to break in, and it isn't a replacement for tools like OWASP ZAP.
-- CORS is tested on the one API address you give it, and health on one path.
+- It doesn't try to break in, and it isn't a replacement for tools like OWASP ZAP. Apart from the opt-in rate-limit test, it only sends ordinary requests.
+- CORS is tested on the one API address you give it, health on one path, and the rate limit on one path with one fake header (`X-Forwarded-For`).
 - Cold start detection is a guess from a few timings.
 - Fix hints are written for Render first; other hosts get general advice.
 
@@ -111,7 +143,7 @@ deploy-checkup https://your-frontend.onrender.com --api https://your-api.onrende
 ```json
 {
   "tool": "deploy-checkup",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "targets": [
     {
       "url": "https://your-api.onrender.com",
