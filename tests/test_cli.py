@@ -1,9 +1,8 @@
 from importlib.metadata import version
-
+import json
 import httpx
 import pytest
-
-from deploy_checkup.cli import main
+from deploy_checkup.cli import _ask_on_stderr, main
 
 SAFE_HEADERS = {
     "Strict-Transport-Security": "max-age=31536000",
@@ -85,3 +84,25 @@ def test_no_answer_at_all_counts_as_no(capsys):
     main(["https://example.com"], client=fake_client(healthy_site), ask=input_ran_out)
 
     assert "skipped" in capsys.readouterr().out
+
+def test_json_output_is_valid_json_with_the_same_exit_code(capsys):
+    exit_code = main(
+        ["https://example.com", "--json"],
+        client=fake_client(lambda request: httpx.Response(500)),
+        ask=lambda prompt: "n",
+    )
+
+    report = json.loads(capsys.readouterr().out)
+    assert exit_code == 1
+    assert report["summary"]["fail"] >= 1
+
+
+def test_permission_question_goes_to_stderr(capsys, monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda: "y")
+
+    answer = _ask_on_stderr("Own it? ")
+
+    captured = capsys.readouterr()
+    assert answer == "y"
+    assert captured.err == "Own it? "
+    assert captured.out == ""

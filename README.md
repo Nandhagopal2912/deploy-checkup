@@ -24,7 +24,7 @@ The headers check skips the API on purpose: a JSON API doesn't need CSP or X-Fra
 
 Fix hints match your host: when a response carries Render's `x-render-origin-server` header, fixes point to the exact place in the Render dashboard; on any other host you get general advice.
 
-Still to come for version 1: `--json` output and a PyPI release.
+Still to come for version 1: a PyPI release.
 
 [`demo/`](demo/) holds a deliberately broken app with known flaws, used to prove each check catches what it should. Fix hints target Render first. See the [roadmap](docs/Deploy%20Doctor%20Roadmap.pdf).
 
@@ -40,6 +40,33 @@ deploy-checkup https://your-frontend.onrender.com --api https://your-api.onrende
 | `--api` | Your API's address, if it is separate |
 | `--health-path` | The API's health check path (default `/health`) |
 | `--yes-i-own-it` | Run the probing checks without asking (for CI) |
+| `--json` | Print the findings as JSON instead of a coloured report |
+
+### JSON output
+
+`--json` prints the same findings for scripts and CI. Only the JSON goes to standard output; the permission question goes to standard error, so you can save the report safely:
+
+```bash
+deploy-checkup https://your-frontend.onrender.com --api https://your-api.onrender.com --json > report.json
+```
+
+```json
+{
+  "tool": "deploy-checkup",
+  "version": "0.0.1",
+  "targets": [
+    {
+      "url": "https://your-api.onrender.com",
+      "findings": [
+        {"check": "health", "level": "pass", "title": "API answered in 108 ms (median of 2)", "why": "", "fix": ""}
+      ]
+    }
+  ],
+  "summary": {"pass": 16, "warning": 0, "fail": 0, "info": 0}
+}
+```
+
+The exit code is the same as for the coloured report: `1` if anything failed, `0` otherwise.
 
 ### Probing checks ask first
 

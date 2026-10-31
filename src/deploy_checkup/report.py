@@ -1,3 +1,6 @@
+import json
+from importlib.metadata import version
+
 from rich.console import Console
 from rich.markup import escape
 
@@ -9,6 +12,15 @@ COLOURS = {
     Level.FAIL: "red",
     Level.INFO: "blue",
 }
+
+
+def count_levels(results: dict[str, list[Finding]]) -> dict[Level, int]:
+    """How many findings there are at each level, across every address."""
+    counts = {level: 0 for level in Level}
+    for findings in results.values():
+        for finding in findings:
+            counts[finding.level] += 1
+    return counts
 
 
 def print_report(results: dict[str, list[Finding]], console: Console | None = None) -> None:
@@ -27,11 +39,34 @@ def print_report(results: dict[str, list[Finding]], console: Console | None = No
                 console.print(f"        [dim]Fix:[/] {escape(finding.fix)}")
         console.print()
 
-    counts = {level: 0 for level in Level}
-    for findings in results.values():
-        for finding in findings:
-            counts[finding.level] += 1
+    counts = count_levels(results)
     summary = ", ".join(
         f"[{COLOURS[level]}]{counts[level]} {level.value}[/]" for level in Level
     )
     console.print(f"Summary: {summary}")
+
+
+def to_json(results: dict[str, list[Finding]]) -> str:
+    """The same findings as JSON, for scripts, CI and other tools."""
+    report = {
+        "tool": "deploy-checkup",
+        "version": version("deploy-checkup"),
+        "targets": [
+            {
+                "url": target,
+                "findings": [
+                    {
+                        "check": f.check,
+                        "level": f.level.value,
+                        "title": f.title,
+                        "why": f.why,
+                        "fix": f.fix,
+                    }
+                    for f in findings
+                ],
+            }
+            for target, findings in results.items()
+        ],
+        "summary": {level.value: count for level, count in count_levels(results).items()},
+    }
+    return json.dumps(report, indent=2)
