@@ -1,10 +1,13 @@
-import httpx
 from importlib.metadata import version
+
+import httpx
+
+from deploy_checkup.checks import exposed_files
 from deploy_checkup.checks.cors import check_cors
 from deploy_checkup.checks.headers import check_headers
+from deploy_checkup.checks.health import check_health
 from deploy_checkup.checks.https import check_https
 from deploy_checkup.checks.reachable import check_reachable
-from deploy_checkup.checks.health import check_health
 from deploy_checkup.models import Finding, Level
 
 USER_AGENT = f"DeployCheckup/{version('deploy-checkup')}"
@@ -17,19 +20,34 @@ def make_client() -> httpx.Client:
 
 
 def run_checks(
-    client: httpx.Client, url: str, api_url: str | None = None, health_path: str = "/health"
+    client: httpx.Client,
+    url: str,
+    api_url: str | None = None,
+    health_path: str = "/health",
+    probe: bool = False,
 ) -> dict[str, list[Finding]]:
-    """Run every check and group the findings by the address they're about."""
+    """Run every check and group the findings by the address they're about.
+
+    probe=True also runs the probing checks, which only the site's owner should run.
+    """
     results = {
         url: check_reachable(client, url) + check_https(client, url) + check_headers(client, url)
     }
+    if probe:
+        results[url] += exposed_files.check_exposed_files(client, url)
+    else:
+        results[url].append(exposed_files.skipped())
+
     if api_url and api_url != url:
-        # An API's home page is often a 404 on purpose, so check its health path instead.
+        # Health goes first: its first request is the one that can catch a cold start.
         results[api_url] = (
             check_health(client, api_url, health_path)
-            +check_https(client, api_url)
+            + check_https(client, api_url)
             + check_cors(client, api_url, url)
         )
+        if probe:
+            results[api_url] += exposed_files.check_exposed_files(client, api_url)
+
     return results
 
 
@@ -39,6 +57,3 @@ def exit_code(results: dict[str, list[Finding]]) -> int:
         if any(finding.level == Level.FAIL for finding in findings):
             return 1
     return 0
-
-
-    

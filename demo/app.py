@@ -6,6 +6,7 @@ Every setting marked FLAW is wrong on purpose. Do not copy them into a real app.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 
 app = FastAPI()
 
@@ -30,3 +31,8 @@ def home():
 @app.get("/api/notes")
 def notes():
     return [{"id": 1, "text": "hello"}]
+
+# FLAW (exposed files): a .env file is served to anyone who asks.
+@app.get("/.env", response_class=PlainTextResponse)
+def leaked_env():
+    return "DATABASE_URL=postgres://demo:not-a-real-password@localhost/demo\n"

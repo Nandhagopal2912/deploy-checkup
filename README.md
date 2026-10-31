@@ -17,11 +17,12 @@ Early development (`0.0.1`, not yet on PyPI). CI runs the tests on Python 3.10 a
 | **cors** | API | Asks the API as your frontend, then as a made-up site (`deploy-checkup-test.invalid`). Is your frontend allowed and everyone else blocked? |
 | **health** | API | Calls the health path (default `/health`) 3 times. Does it exist, and what's the median response time? |
 | **cold_start** | API | Was the first of those requests much slower than the rest (Render's free tier waking up)? Reported as a hint, not a verdict. |
+| **exposed_files** | frontend and API | Can anyone download `/.env` or `/.git/config`? **Probing:** runs only after you confirm you own the site (see below). |
 | **headers** | frontend | Are the browser security headers set? Strict-Transport-Security (at least 6 months), X-Content-Type-Options (`nosniff`), Content-Security-Policy, X-Frame-Options (or CSP `frame-ancestors`), Referrer-Policy |
 
 The headers check skips the API on purpose: a JSON API doesn't need CSP or X-Frame-Options, and flagging them would be a false alarm.
 
-Still to come for version 1: exposed files, Render-specific fix hints, `--json` output, and a PyPI release.
+Still to come for version 1: Render-specific fix hints, `--json` output, and a PyPI release.
 
 [`demo/`](demo/) holds a deliberately broken app with known flaws, used to prove each check catches what it should. Fix hints target Render first. See the [roadmap](docs/Deploy%20Doctor%20Roadmap.pdf).
 
@@ -36,6 +37,11 @@ deploy-checkup https://your-frontend.onrender.com --api https://your-api.onrende
 | `url` | Your frontend's address (required) |
 | `--api` | Your API's address, if it is separate |
 | `--health-path` | The API's health check path (default `/health`) |
+| `--yes-i-own-it` | Run the probing checks without asking (for CI) |
+
+### Probing checks ask first
+
+Most checks send ordinary requests any browser could send. The exposed files check asks for paths like `/.env`, which on someone else's site can look like an attack. So deploy-checkup asks *"Do you own this site?"* before running it. If nobody can answer (in CI, for example), it is skipped and the report says so, unless you pass `--yes-i-own-it`. A leaked file's contents are never shown in the report.
 | `-V`, `--version` | Show the version |
 | `-h`, `--help` | Show help |
 

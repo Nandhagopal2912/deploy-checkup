@@ -56,3 +56,32 @@ def test_version_prints_installed_version(capsys):
 
     assert exc.value.code == 0
     assert version("deploy-checkup") in capsys.readouterr().out
+    
+def test_probing_is_skipped_without_permission(capsys):
+    main(["https://example.com"], client=fake_client(healthy_site), ask=lambda prompt: "n")
+
+    assert "skipped" in capsys.readouterr().out
+
+
+def test_answering_yes_runs_probing(capsys):
+    main(["https://example.com"], client=fake_client(healthy_site), ask=lambda prompt: "yes")
+
+    assert "/.env is not exposed" in capsys.readouterr().out
+
+
+def test_flag_runs_probing_without_asking(capsys):
+    def never_ask(prompt):
+        raise AssertionError("should not ask when --yes-i-own-it is given")
+
+    main(["https://example.com", "--yes-i-own-it"], client=fake_client(healthy_site), ask=never_ask)
+
+    assert "/.env is not exposed" in capsys.readouterr().out
+
+
+def test_no_answer_at_all_counts_as_no(capsys):
+    def input_ran_out(prompt):
+        raise EOFError
+
+    main(["https://example.com"], client=fake_client(healthy_site), ask=input_ran_out)
+
+    assert "skipped" in capsys.readouterr().out

@@ -1,13 +1,18 @@
 import argparse
 from importlib.metadata import version
-
+import sys
+from collections.abc import Callable
 import httpx
 
 from deploy_checkup.report import print_report
 from deploy_checkup.runner import exit_code, make_client, run_checks
 
 
-def main(argv: list[str] | None = None, client: httpx.Client | None = None) -> int:
+def main(
+    argv: list[str] | None = None,
+    client: httpx.Client | None = None,
+    ask: Callable[[str], str] | None = None,
+) -> int:
     parser = argparse.ArgumentParser(
         description="Check whether your deployed app is set up safely.",
         epilog="Only test apps you own or have permission to test.",
@@ -20,16 +25,38 @@ def main(argv: list[str] | None = None, client: httpx.Client | None = None) -> i
         help="show the program's version number",
     )
     parser.add_argument("url", help="your frontend's address")
+    
     parser.add_argument("--api", help="your API's address, if it is separate")
+    
     parser.add_argument("--health-path",default="/health",help="the API's heatlh check path (defaults: /health)",)
+    
+    parser.add_argument("--yes-i-own-it",action="store_true",help="skip the permission question and run the probing checks (for CI)",)
+    
     args = parser.parse_args(argv)
+    probe = _has_permission(args.url, args.yes_i_own_it, ask)
 
     with client or make_client() as http:
-                results = run_checks(http, args.url, args.api, args.health_path)
-
+        results = run_checks(http, args.url, args.api, args.health_path, probe)
+        
     print_report(results)
     return exit_code(results)
 
+def _has_permission(url: str, yes_i_own_it: bool, ask: Callable[[str], str] | None) -> bool:
+    """Probing checks run only with a flag or a typed "yes"; never by accident."""
+    if yes_i_own_it:
+        return True
+    if ask is None:
+        if not sys.stdin.isatty():
+            return False  # nobody is there to answer, for example in CI
+        ask = input
+    try:
+        answer = ask(
+            f"Also check {url} for exposed files like /.env? "
+            "Only say yes if you own this site or have permission to test it. [y/N] "
+        )
+    except EOFError:
+        return False  # input ran out without an answer, so treat it as "no"
+    return answer.strip().lower() in ("y", "yes")
 
 if __name__ == "__main__":
     raise SystemExit(main())

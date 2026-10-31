@@ -6,6 +6,7 @@ A small FastAPI app that is **misconfigured on purpose**, so deploy-checkup has 
 |---|---|---|
 | CORS | Any website can call the API from a visitor's browser, with their cookies | cors check: FAIL "API lets any website read it with your visitors' cookies" |
 | Headers | No security headers at all | headers check |
+| Exposed files | `/.env` is served to anyone (with a fake password) | exposed_files check: FAIL "/.env is publicly downloadable" (answer yes to the prompt) |
 | Health | No `/health` endpoint | health check: WARNING "No health endpoint found at /health" |
 
 ## Run it locally
