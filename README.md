@@ -12,7 +12,7 @@ Early development (`0.0.1`). The command-line skeleton works and has tests, whic
 
 - **reachable**: does the address answer, and with what status?
 - **https**: does the plain `http://` address redirect to `https://`, and permanently (301/308)?
-- **headers**: are the browser security headers set? So far: Strict-Transport-Security (at least 6 months) and X-Content-Type-Options (`nosniff`).
+- **headers**: are the browser security headers set? Strict-Transport-Security (at least 6 months), X-Content-Type-Options (`nosniff`), Content-Security-Policy, X-Frame-Options (or CSP `frame-ancestors`), and Referrer-Policy. Meant for the frontend: a JSON API doesn't need CSP or X-Frame-Options.
 
 Planned for version 1: HTTPS and redirects, security headers, CORS behaviour, health and latency, cold start, and exposed files. Fix hints target Render first. See the [roadmap](docs/Deploy%20Doctor%20Roadmap.pdf).
 

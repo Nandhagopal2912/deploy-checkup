@@ -17,6 +17,9 @@ def check_headers(client: httpx.Client , url:str)->list[Finding]:
     return [
         _check_hsts(headers),
         _check_content_type_options(headers),
+        _check_csp(headers),
+        _check_frame_options(headers),
+        _check_referrer_policy(headers),
     ]
 
 
@@ -77,3 +80,61 @@ def _check_content_type_options(headers: httpx.Headers)->Finding:
         )
         
     return Finding(check=CHECK, level=Level.PASS, title="X-Content-Type-Options is nosniff")
+
+def _check_csp(headers: httpx.Headers)-> Finding:
+    if headers.get("content-security-policy") is None:
+        return Finding(
+            check=CHECK,
+            level=Level.WARNING,
+            title="Content-Security-Policy is missing",
+            why=(
+                "If an attacker manages to inject a script into your page, the browser "
+                "will run it. A policy tells the browser which scripts are allowed."
+            ),
+            fix=(
+                "Start with Content-Security-Policy: default-src 'self' and loosen it "
+                "only for the outside sources your frontend really uses."
+            ),            
+        )
+    return Finding(check=CHECK , level=Level.PASS,title="Content-Security-Policy is set")
+
+def _check_frame_options(headers: httpx.Headers) -> Finding:
+    value = headers.get("x-frame-options", "").strip().upper()
+    csp = headers.get("content-security-policy","").strip().lower()
+    
+    if value in ("DENY","SAMEORIGIN"):
+        return Finding(check=CHECK , level=Level.PASS , title=f"X-Frame-Options is {value}")
+    
+    if "frame-ancestors" in csp:
+        return Finding(
+            check=CHECK,
+            level=Level.PASS,
+            title="X-Frame-Options isn't needed (CSP sets frame-ancestors)",
+        )
+    
+    return Finding(
+        check=CHECK,
+        level=Level.WARNING,
+        title="X-Frame-Options is missing",
+        why=(
+            "Another site can load yours inside an invisible frame and trick "
+            "visitors into clicking buttons they can't see."
+        ),
+        fix="Send X-Frame-Options: DENY, or add frame-ancestors 'none' to your CSP.",
+    )
+    
+
+def _check_referrer_policy(headers: httpx.Headers)->Finding:
+    value = headers.get("referrer-policy")
+    if value is None:
+        return Finding(
+            check=CHECK,
+            level=Level.INFO,
+            title="Referrer-Policy is not set",
+            why=(
+                "Modern browsers already default to a safe policy, but setting it "
+                "makes the behaviour the same in every browser."
+            ),
+            fix="Send Referrer-Policy: strict-origin-when-cross-origin.",
+        )
+    return Finding(check=CHECK, level=Level.PASS, title=f"Referrer-Policy is {value}")
