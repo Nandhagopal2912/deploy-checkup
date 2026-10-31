@@ -14,7 +14,7 @@ Requires Python 3.10 or newer.
 pipx install deploy-checkup
 ```
 
-`pipx` installs command-line tools in their own environment. `pip install deploy-checkup` works too.
+`pipx` installs command-line tools in their own environment ([how to install pipx](https://pipx.pypa.io/stable/installation/)). `pip install deploy-checkup` works too.
 
 ## Usage
 
@@ -45,7 +45,27 @@ WARNING Content-Security-Policy is missing
 Summary: 6 pass, 1 warning, 0 fail, 0 info
 ```
 
-Each finding says what was found, why it matters, and how to fix it. The command exits with code `1` if anything fails, so you can run it in CI after a deploy, and `0` otherwise.
+Each finding says what was found, why it matters, and how to fix it.
+
+| Level | Meaning |
+|---|---|
+| **PASS** | Checked, and it's set up well. |
+| **WARNING** | Probably worth fixing, but your app may be fine without it. Used whenever deploy-checkup can't be sure. |
+| **FAIL** | Something is clearly broken or unsafe. Fix this first. |
+| **INFO** | Good to know, such as a check that was skipped or a hint that may not apply. |
+
+The command exits with code `1` if anything fails and `0` otherwise.
+
+### Use it in CI
+
+Run it after each deploy, so a broken setup fails the pipeline. For example, in GitHub Actions:
+
+```yaml
+- run: pip install deploy-checkup
+- run: deploy-checkup https://your-frontend.onrender.com --api https://your-api.onrender.com --yes-i-own-it
+```
+
+`--yes-i-own-it` runs the probing checks without the question nobody can answer in CI. Leave it out to run only the gentle checks.
 
 ## What it checks
 
@@ -70,6 +90,15 @@ Most checks send ordinary requests any browser could send. The exposed files che
 ### Polite by design
 
 Every request uses a 60-second timeout (Render's free tier can take about 50 seconds to wake up) and identifies itself as `User-Agent: DeployCheckup/<version>`, so site owners can see what called them. A full run sends a few dozen ordinary requests.
+
+### What it doesn't do
+
+deploy-checkup is a quick first look, not a full security audit:
+
+- It only sends ordinary requests. It doesn't try to break in, and it isn't a replacement for tools like OWASP ZAP.
+- CORS is tested on the one API address you give it, and health on one path.
+- Cold start detection is a guess from a few timings.
+- Fix hints are written for Render first; other hosts get general advice.
 
 ## JSON output
 
