@@ -24,7 +24,7 @@ Then, in a second terminal:
 deploy-checkup http://127.0.0.1:8000 --api http://127.0.0.1:8000/api/notes
 ```
 
-Locally the HTTPS check also fails, because uvicorn serves plain HTTP. Deployed on Render, the platform adds the HTTPS redirect.
+Locally the HTTPS check also fails, because uvicorn serves plain HTTP. Deployed on Render, the platform adds the HTTPS redirect. On Render's free tier, the first run after 15 idle minutes also shows the cold start hint.
 
 ## Deploy on Render
 

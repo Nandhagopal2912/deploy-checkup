@@ -26,9 +26,9 @@ def run_checks(
     if api_url and api_url != url:
         # An API's home page is often a 404 on purpose, so check its health path instead.
         results[api_url] = (
-            check_https(client, api_url)
+            check_health(client, api_url, health_path)
+            +check_https(client, api_url)
             + check_cors(client, api_url, url)
-            + check_health(client, api_url, health_path)
         )
     return results
 

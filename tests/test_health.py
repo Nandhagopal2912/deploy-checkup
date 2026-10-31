@@ -11,11 +11,22 @@ def check(handler, path="/health"):
     return check_health(client, API, path)
 
 
-def test_healthy_endpoint_reports_latency():
+def test_healthy_endpoint_reports_latency_and_cold_start():
     findings = check(lambda request: httpx.Response(200))
 
+    assert [f.check for f in findings] == ["health", "cold_start"]
     assert findings[0].level == Level.PASS
     assert "ms" in findings[0].title
+
+
+def test_unreachable_api_fails():
+    def handler(request):
+        raise httpx.ConnectError("connection refused", request=request)
+
+    findings = check(handler)
+
+    assert findings[0].level == Level.FAIL
+    assert "api.example.com" in findings[0].title
 
 
 def test_calls_health_path_at_the_root_a_few_times():

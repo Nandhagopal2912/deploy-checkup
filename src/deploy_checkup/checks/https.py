@@ -13,6 +13,8 @@ def check_https(client: httpx.Client, url: str) -> list[Finding]:
     try:
         response = client.get(http_url, follow_redirects=True)
     except httpx.RequestError:
+        if not _answers(client,url):
+            return []
         return [
             Finding(
                 check=CHECK,
@@ -62,3 +64,11 @@ def check_https(client: httpx.Client, url: str) -> list[Finding]:
             fix="Make the redirect permanent: use status 301 or 308 instead of 302 or 307.",
         )
     ]
+
+def _answers(client: httpx.Client, url: str) -> bool:
+    """True if the site answers at all on its normal address."""
+    try:
+        client.get(url)
+    except httpx.RequestError:
+        return False
+    return True

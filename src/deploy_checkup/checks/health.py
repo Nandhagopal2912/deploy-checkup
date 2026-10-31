@@ -1,8 +1,8 @@
 from statistics import median
 from time import perf_counter
-
 import httpx
 
+from deploy_checkup.checks.cold_start import check_cold_start
 from deploy_checkup.models import Finding, Level
 
 CHECK = "health"
@@ -20,7 +20,7 @@ def check_health(client: httpx.Client, api_url: str, path: str = "/health") -> l
         try:
             response = client.get(health_url)
         except httpx.RequestError:
-            return []  # the other checks already report connection problems
+            return [_unreachable(health_url)] 
         elapsed_ms = (perf_counter() - start) * 1000
 
         if response.status_code == 404:
@@ -30,9 +30,20 @@ def check_health(client: httpx.Client, api_url: str, path: str = "/health") -> l
 
         times_ms.append(elapsed_ms)
 
-    return [_latency(times_ms)]
+    return [_latency(times_ms[1:]), check_cold_start(times_ms)]
 
-
+def _unreachable(health_url: httpx.URL) -> Finding:
+    return Finding(
+        check=CHECK,
+        level=Level.FAIL,
+        title=f"Couldn't connect to the API at {health_url.host}",
+        why="Your frontend can't load any data if the API doesn't answer.",
+        fix=(
+            "Check the --api address is right, then open the API service in the Render "
+            "dashboard and look at the Events and Logs tabs."
+        ),
+    )
+    
 def _missing(health_url: httpx.URL) -> Finding:
     return Finding(
         check=CHECK,

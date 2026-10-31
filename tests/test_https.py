@@ -49,7 +49,9 @@ def test_plain_http_served_fails():
 
 def test_http_not_served_is_info():
     def handler(request):
-        raise httpx.ConnectError("connection refused", request=request)
+        if request.url.scheme == "http":
+            raise httpx.ConnectError("connection refused", request=request)
+        return httpx.Response(200)
 
     client = make_client(handler)
 
@@ -57,6 +59,14 @@ def test_http_not_served_is_info():
 
     assert findings[0].level == Level.INFO
 
+
+def test_site_completely_down_reports_nothing():
+    def handler(request):
+        raise httpx.ConnectError("connection refused", request=request)
+
+    findings = check_https(make_client(handler), URL)
+
+    assert findings == []
 
 def test_requests_the_http_address():
     seen = []
