@@ -12,6 +12,7 @@ Early development (`0.0.1`). The command-line skeleton works and has tests, whic
 
 - **reachable**: does the address answer, and with what status?
 - **https**: does the plain `http://` address redirect to `https://`, and permanently (301/308)?
+- **headers**: are the browser security headers set? So far: Strict-Transport-Security (at least 6 months) and X-Content-Type-Options (`nosniff`).
 
 Planned for version 1: HTTPS and redirects, security headers, CORS behaviour, health and latency, cold start, and exposed files. Fix hints target Render first. See the [roadmap](docs/Deploy%20Doctor%20Roadmap.pdf).
 
