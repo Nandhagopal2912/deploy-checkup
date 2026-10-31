@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Check the release tag matches the version in pyproject.toml
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          echo "Tag: $TAG  pyproject.toml: $version"
+          test "$TAG" = "v$version"
+
+      - run: pip install -e ".[dev]"
+      - run: pytest
+
+      - run: python -m build
+      - run: twine check dist/*
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
