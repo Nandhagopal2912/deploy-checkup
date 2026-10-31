@@ -1,7 +1,6 @@
-from importlib.metadata import version
-
 import httpx
-
+from importlib.metadata import version
+from deploy_checkup.checks.cors import check_cors
 from deploy_checkup.checks.headers import check_headers
 from deploy_checkup.checks.https import check_https
 from deploy_checkup.checks.reachable import check_reachable
@@ -25,7 +24,7 @@ def run_checks(
     }
     if api_url and api_url != url:
         # An API's home page is often a 404 on purpose; Phase 2's health check covers it.
-        results[api_url] = check_https(client, api_url)
+        results[api_url] = check_https(client, api_url)+check_cors(client,api_url,url)
     return results
 
 

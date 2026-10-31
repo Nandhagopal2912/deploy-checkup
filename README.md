@@ -14,11 +14,12 @@ Early development (`0.0.1`, not yet on PyPI). CI runs the tests on Python 3.10 a
 |---|---|---|
 | **reachable** | frontend | Does the address answer, and with what status? |
 | **https** | frontend and API | Does plain `http://` redirect to `https://`, and permanently (301/308)? |
+| **cors** | API | Asks the API as your frontend, then as a made-up site (`deploy-checkup-test.invalid`). Is your frontend allowed and everyone else blocked? |
 | **headers** | frontend | Are the browser security headers set? Strict-Transport-Security (at least 6 months), X-Content-Type-Options (`nosniff`), Content-Security-Policy, X-Frame-Options (or CSP `frame-ancestors`), Referrer-Policy |
 
 The headers check skips the API on purpose: a JSON API doesn't need CSP or X-Frame-Options, and flagging them would be a false alarm.
 
-Still to come for version 1: CORS behaviour, health and latency, cold start, and exposed files.
+Still to come for version 1: health and latency, cold start, and exposed files.
 
 [`demo/`](demo/) holds a deliberately broken app with known flaws, used to prove each check catches what it should. Fix hints target Render first. See the [roadmap](docs/Deploy%20Doctor%20Roadmap.pdf).
 
