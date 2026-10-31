@@ -1,32 +1,33 @@
 import httpx
 
-from deploy_checkup.models import Finding,Level
-
+from deploy_checkup.models import Finding, Level
 
 CHECK = "reachable"
 
-def check_reachable(client:httpx.Client , url:str)->list[Finding]:
-    """Report whether the url answers, and how"""
-    
+
+def check_reachable(client: httpx.Client, url: str) -> list[Finding]:
+    """Report whether the URL answers, and how."""
     try:
         response = client.get(url)
     except httpx.RequestError:
-        return[
+        return [
             Finding(
                 check=CHECK,
                 level=Level.FAIL,
                 title="Couldn't connect to the site",
                 why="Nobody can use your app if the address doesn't answer.",
-                fix = (
-                "Check the URL is right, then open the service in the Render dashboard and look at the Events and Logs tabs."
+                fix="Check the URL is right, then look at your host's deploy status and logs.",
+                render_fix=(
+                    "Check the URL is right, then open the service in the Render "
+                    "dashboard and look at the Events and Logs tabs."
                 ),
             )
         ]
-        
+
     status = response.status_code
-    title =  f"Site answered with status {status}"
-    
-    if status>=500:
+    title = f"Site answered with status {status}"
+
+    if status >= 500:
         return [
             Finding(
                 check=CHECK,
@@ -34,13 +35,17 @@ def check_reachable(client:httpx.Client , url:str)->list[Finding]:
                 title=title,
                 why="Your server hit an error, so visitors see a broken page instead of your app.",
                 fix=(
+                    "Check your server's logs. A 502 or 503 usually means the app "
+                    "crashed on startup or is still deploying."
+                ),
+                render_fix=(
                     "Open the service's Logs tab on Render. A 502 or 503 usually means "
                     "the app crashed on startup or is still deploying."
                 ),
             )
         ]
-    
-    if status>=400:
+
+    if status >= 400:
         return [
             Finding(
                 check=CHECK,
@@ -50,6 +55,5 @@ def check_reachable(client:httpx.Client , url:str)->list[Finding]:
                 fix="Check the URL is the page you meant to test, for example your home page.",
             )
         ]
-    
-    return [Finding(check=CHECK,level=Level.PASS,title=title)]
-              
+
+    return [Finding(check=CHECK, level=Level.PASS, title=title)]

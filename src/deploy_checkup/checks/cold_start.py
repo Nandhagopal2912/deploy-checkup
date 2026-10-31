@@ -17,12 +17,16 @@ def check_cold_start(times_ms: list[float]) -> Finding:
             level=Level.INFO,
             title=f"First request took {first / 1000:.1f} s, later ones {warm} ms: free tier waking up?",
             why=(
-                "Render's free tier puts your app to sleep after 15 minutes without "
-                "visitors, and the next visitor waits while it starts again."
+                "Free hosting plans often put an app to sleep when nobody visits, "
+                "and the next visitor waits while it starts again."
             ),
             fix=(
-                "Say so in your README so visitors know to wait, or move the service "
-                "to a paid instance type on Render to keep it awake."
+                "Say so in your README so visitors know to wait, or use a plan that "
+                "keeps the server running."
+            ),
+            render_fix=(
+                "Render's free tier sleeps after 15 minutes without visitors. Say so in "
+                "your README, or move the service to a paid instance type to keep it awake."
             ),
         )
 

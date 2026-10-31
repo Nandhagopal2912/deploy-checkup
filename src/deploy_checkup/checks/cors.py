@@ -44,6 +44,10 @@ def _check_own_frontend(response: httpx.Response, frontend: str) -> Finding:
             "so pages that load data will break."
         ),
         fix=(
+            f"Add {frontend} to your API's allowed origins (often set through an "
+            "environment variable), then redeploy."
+        ),
+        render_fix=(
             f"Add {frontend} to your API's allowed origins, for example through an "
             "environment variable in the Render dashboard, then redeploy."
         ),

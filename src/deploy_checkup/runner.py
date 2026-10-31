@@ -8,6 +8,7 @@ from deploy_checkup.checks.headers import check_headers
 from deploy_checkup.checks.health import check_health
 from deploy_checkup.checks.https import check_https
 from deploy_checkup.checks.reachable import check_reachable
+from deploy_checkup.hosts import detect_host, fixes_for_host
 from deploy_checkup.models import Finding, Level
 
 USER_AGENT = f"DeployCheckup/{version('deploy-checkup')}"
@@ -30,23 +31,23 @@ def run_checks(
 
     probe=True also runs the probing checks, which only the site's owner should run.
     """
-    results = {
-        url: check_reachable(client, url) + check_https(client, url) + check_headers(client, url)
-    }
+    frontend = check_reachable(client, url) + check_https(client, url) + check_headers(client, url)
     if probe:
-        results[url] += exposed_files.check_exposed_files(client, url)
+        frontend += exposed_files.check_exposed_files(client, url)
     else:
-        results[url].append(exposed_files.skipped())
+        frontend.append(exposed_files.skipped())
+    results = {url: fixes_for_host(frontend, detect_host(client, url))}
 
     if api_url and api_url != url:
         # Health goes first: its first request is the one that can catch a cold start.
-        results[api_url] = (
+        api = (
             check_health(client, api_url, health_path)
             + check_https(client, api_url)
             + check_cors(client, api_url, url)
         )
         if probe:
-            results[api_url] += exposed_files.check_exposed_files(client, api_url)
+            api += exposed_files.check_exposed_files(client, api_url)
+        results[api_url] = fixes_for_host(api, detect_host(client, api_url))
 
     return results
 

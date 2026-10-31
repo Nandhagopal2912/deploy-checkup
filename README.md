@@ -22,7 +22,9 @@ Early development (`0.0.1`, not yet on PyPI). CI runs the tests on Python 3.10 a
 
 The headers check skips the API on purpose: a JSON API doesn't need CSP or X-Frame-Options, and flagging them would be a false alarm.
 
-Still to come for version 1: Render-specific fix hints, `--json` output, and a PyPI release.
+Fix hints match your host: when a response carries Render's `x-render-origin-server` header, fixes point to the exact place in the Render dashboard; on any other host you get general advice.
+
+Still to come for version 1: `--json` output and a PyPI release.
 
 [`demo/`](demo/) holds a deliberately broken app with known flaws, used to prove each check catches what it should. Fix hints target Render first. See the [roadmap](docs/Deploy%20Doctor%20Roadmap.pdf).
 

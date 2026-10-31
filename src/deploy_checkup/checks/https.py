@@ -13,8 +13,8 @@ def check_https(client: httpx.Client, url: str) -> list[Finding]:
     try:
         response = client.get(http_url, follow_redirects=True)
     except httpx.RequestError:
-        if not _answers(client,url):
-            return []
+        if not _answers(client, url):
+            return []  # the whole site is down; the reachable or health check says so
         return [
             Finding(
                 check=CHECK,
@@ -35,6 +35,10 @@ def check_https(client: httpx.Client, url: str) -> list[Finding]:
                     "Anyone on the same Wi-Fi can read or change what they see and send."
                 ),
                 fix=(
+                    "Turn on your host's 'redirect HTTP to HTTPS' setting, or redirect in "
+                    "your app, and make sure your domain has a TLS certificate."
+                ),
+                render_fix=(
                     "Render redirects to HTTPS automatically on its own addresses. If you use a "
                     "custom domain, check it shows as Verified with a certificate under "
                     "Settings > Custom Domains."
@@ -64,6 +68,7 @@ def check_https(client: httpx.Client, url: str) -> list[Finding]:
             fix="Make the redirect permanent: use status 301 or 308 instead of 302 or 307.",
         )
     ]
+
 
 def _answers(client: httpx.Client, url: str) -> bool:
     """True if the site answers at all on its normal address."""
