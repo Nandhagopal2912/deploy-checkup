@@ -52,13 +52,15 @@ def test_nosniff_missing_warns():
     assert find(findings, "X-Content-Type-Options").level == Level.WARNING
 
 
-def test_connection_error_returns_nothing():
+def test_connection_error_is_reported_not_hidden():
     def handler(request):
         raise httpx.ConnectError("connection refused", request=request)
 
     findings = check_headers(httpx.Client(transport=httpx.MockTransport(handler)), URL)
 
-    assert findings == []
+    assert len(findings) == 1
+    assert findings[0].level == Level.INFO
+    assert "Couldn't finish the headers check" in findings[0].title
 
 def test_csp_present_passes():
     findings = run_with_headers({"Content-Security-Policy": "default-src 'self'"})

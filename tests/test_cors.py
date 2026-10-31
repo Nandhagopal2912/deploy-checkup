@@ -78,3 +78,18 @@ def test_sends_frontend_origin_then_made_up_origin():
 def test_origin_drops_path_and_keeps_unusual_port():
     assert _origin("https://app.example.com/dashboard?x=1") == "https://app.example.com"
     assert _origin("http://127.0.0.1:8000/") == "http://127.0.0.1:8000"
+    
+def test_network_error_partway_is_reported_not_hidden():
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        if len(calls) == 2:
+            raise httpx.ReadTimeout("timed out", request=request)
+        return httpx.Response(200)
+
+    findings = check(handler)
+
+    assert len(findings) == 1
+    assert findings[0].level == Level.INFO
+    assert "ReadTimeout" in findings[0].title

@@ -1,6 +1,5 @@
 import httpx
-from deploy_checkup.models import Finding, Level
-
+from deploy_checkup.models import Finding, Level, could_not_finish
 
 CHECK = "headers"
 SIX_MONTHS= 15_552_000 #seconds
@@ -10,8 +9,8 @@ def check_headers(client: httpx.Client , url:str)->list[Finding]:
     try:
         response = client.get(url, follow_redirects=True)
         
-    except httpx.RequestError:
-        return []
+    except httpx.RequestError as error:
+        return [could_not_finish(CHECK, error)]
     
     headers = response.headers
     return [

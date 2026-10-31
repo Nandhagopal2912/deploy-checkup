@@ -37,3 +37,10 @@ def test_level_from_string():
     
     with pytest.raises(ValueError):
         Level("warn")
+def test_could_not_finish_names_the_check_and_error():
+    from deploy_checkup.models import could_not_finish
+
+    finding = could_not_finish("cors", TimeoutError("slow"))
+
+    assert finding.level == Level.INFO
+    assert finding.title == "Couldn't finish the cors check (TimeoutError)"

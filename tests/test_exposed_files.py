@@ -58,3 +58,15 @@ def test_secret_values_are_never_shown():
 
     for finding in findings:
         assert "abc123" not in finding.title + finding.why + finding.fix
+
+def test_network_error_keeps_earlier_results_and_says_so():
+    def handler(request):
+        if request.url.path == "/.git/config":
+            raise httpx.ReadTimeout("timed out", request=request)
+        return httpx.Response(404)
+
+    findings = check(handler)
+
+    assert find(findings, "/.env").level == Level.PASS
+    assert findings[-1].level == Level.INFO
+    assert "Couldn't finish" in findings[-1].title

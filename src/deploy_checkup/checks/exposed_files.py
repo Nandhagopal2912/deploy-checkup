@@ -2,8 +2,7 @@ import re
 
 import httpx
 
-from deploy_checkup.models import Finding, Level
-
+from deploy_checkup.models import Finding, Level, could_not_finish
 CHECK = "exposed_files"
 
 
@@ -28,8 +27,8 @@ def check_exposed_files(client: httpx.Client, url: str) -> list[Finding]:
     for path, looks_real in PATHS.items():
         try:
             response = client.get(httpx.URL(url).join(path))
-        except httpx.RequestError:
-            return []  # the other checks already report connection problems
+        except httpx.RequestError as error:
+            return findings + [could_not_finish(CHECK, error)]
 
         is_html = "text/html" in response.headers.get("content-type", "")
         if response.status_code == 200 and not is_html and looks_real(response.text):
