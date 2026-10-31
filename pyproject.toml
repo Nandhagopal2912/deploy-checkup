@@ -1,11 +1,29 @@
 [build-system]
-requires =["setuptools>=61.0"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "deploy-checkup"
-version = "0.0.1"
+version = "0.1.0"
+description = "Check whether your deployed app is set up safely, in plain language, with fixes for your host."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Nandhagopal" }]
 requires-python = ">=3.10"
+keywords = ["deploy", "security", "cors", "headers", "https", "render", "cli"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Internet :: WWW/HTTP",
+]
 dependencies = [
     "httpx >= 0.28,<1",
     "rich >= 14,<16",
@@ -14,8 +32,13 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest >=8",
+    "build",
+    "twine",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Nandhagopal2912/deploy-checkup"
+Issues = "https://github.com/Nandhagopal2912/deploy-checkup/issues"
 
 [project.scripts]
 deploy-checkup = "deploy_checkup.cli:main"
-
