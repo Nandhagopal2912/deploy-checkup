@@ -21,10 +21,11 @@ def main(argv: list[str] | None = None, client: httpx.Client | None = None) -> i
     )
     parser.add_argument("url", help="your frontend's address")
     parser.add_argument("--api", help="your API's address, if it is separate")
+    parser.add_argument("--health-path",default="/health",help="the API's heatlh check path (defaults: /health)",)
     args = parser.parse_args(argv)
 
     with client or make_client() as http:
-        results = run_checks(http, args.url, args.api)
+                results = run_checks(http, args.url, args.api, args.health_path)
 
     print_report(results)
     return exit_code(results)
