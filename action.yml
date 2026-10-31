@@ -1,0 +1,50 @@
+name: deploy-checkup
+description: Check whether your deployed app is set up safely, in plain language, after every deploy.
+branding:
+  icon: shield
+  color: green
+
+inputs:
+  url:
+    description: Your frontend's address
+    required: true
+  api:
+    description: Your API's address, if it is separate
+    required: false
+    default: ""
+  health-path:
+    description: The API's health check path
+    required: false
+    default: /health
+  i-own-it:
+    description: Set to "true" to also run the probing checks. Only for apps you own or have permission to test.
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v7
+      with:
+        python-version: "3.13"
+
+    - name: Install deploy-checkup
+      shell: bash
+      run: pip install "$GITHUB_ACTION_PATH"
+
+    - name: Run deploy-checkup
+      shell: bash
+      env:
+        URL: ${{ inputs.url }}
+        API: ${{ inputs.api }}
+        HEALTH_PATH: ${{ inputs.health-path }}
+        I_OWN_IT: ${{ inputs.i-own-it }}
+      run: |
+        args=("$URL" --health-path "$HEALTH_PATH")
+        if [ -n "$API" ]; then
+          args+=(--api "$API")
+        fi
+        if [ "$I_OWN_IT" = "true" ]; then
+          args+=(--yes-i-own-it)
+        fi
+        deploy-checkup "${args[@]}"
