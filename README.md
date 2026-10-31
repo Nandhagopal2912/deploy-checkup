@@ -18,7 +18,9 @@ Early development (`0.0.1`, not yet on PyPI). CI runs the tests on Python 3.10 a
 
 The headers check skips the API on purpose: a JSON API doesn't need CSP or X-Frame-Options, and flagging them would be a false alarm.
 
-Still to come for version 1: CORS behaviour, health and latency, cold start, and exposed files. Fix hints target Render first. See the [roadmap](docs/Deploy%20Doctor%20Roadmap.pdf).
+Still to come for version 1: CORS behaviour, health and latency, cold start, and exposed files.
+
+[`demo/`](demo/) holds a deliberately broken app with known flaws, used to prove each check catches what it should. Fix hints target Render first. See the [roadmap](docs/Deploy%20Doctor%20Roadmap.pdf).
 
 ## Usage
 

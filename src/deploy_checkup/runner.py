@@ -23,7 +23,7 @@ def run_checks(
     results = {
         url: check_reachable(client, url) + check_https(client, url) + check_headers(client, url)
     }
-    if api_url:
+    if api_url and api_url != url:
         # An API's home page is often a 404 on purpose; Phase 2's health check covers it.
         results[api_url] = check_https(client, api_url)
     return results

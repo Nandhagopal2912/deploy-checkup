@@ -39,4 +39,12 @@ def test_exit_code_is_1_only_when_something_fails():
 def test_client_sends_honest_user_agent():
     with make_client() as client:
         assert client.headers["User-Agent"] == USER_AGENT
-    assert USER_AGENT.startswith("DeployCheckup/")
+    assert USER_AGENT.startswith("DeployCheckup/") 
+
+def test_same_address_for_frontend_and_api_keeps_frontend_findings():
+    client = fake_client(lambda request: httpx.Response(200))
+
+    results = run_checks(client, "https://example.com", "https://example.com")
+
+    assert list(results) == ["https://example.com"]
+    assert any(f.check == "headers" for f in results["https://example.com"])

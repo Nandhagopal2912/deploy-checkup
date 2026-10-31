@@ -35,7 +35,7 @@ def check_https(client: httpx.Client, url: str) -> list[Finding]:
                 fix=(
                     "Render redirects to HTTPS automatically on its own addresses. If you use a "
                     "custom domain, check it shows as Verified with a certificate under "
-                    "Settings → Custom Domains."
+                    "Settings > Custom Domains."
                 ),
             )
         ]
