@@ -3,10 +3,12 @@
 Every setting marked FLAW is wrong on purpose. Do not copy them into a real app.
 """
 
-from fastapi import FastAPI
+import time
+from collections import defaultdict
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
-from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 
 app = FastAPI()
 
@@ -32,7 +34,33 @@ def home():
 def notes():
     return [{"id": 1, "text": "hello"}]
 
+
 # FLAW (exposed files): a .env file is served to anyone who asks.
 @app.get("/.env", response_class=PlainTextResponse)
 def leaked_env():
     return "DATABASE_URL=postgres://demo:not-a-real-password@localhost/demo\n"
+
+
+LIMIT = 5  # requests per visitor
+WINDOW_SECONDS = 60
+recent_requests: dict[str, list[float]] = defaultdict(list)
+
+
+def client_ip(request: Request) -> str:
+    # FLAW (rate limit): trusts the first X-Forwarded-For entry, which any visitor can write.
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host
+
+
+@app.get("/api/limited")
+def limited(request: Request):
+    ip = client_ip(request)
+    now = time.monotonic()
+    recent = [t for t in recent_requests[ip] if now - t < WINDOW_SECONDS]
+    if len(recent) >= LIMIT:
+        recent_requests[ip] = recent
+        return JSONResponse({"detail": "Too many requests"}, status_code=429)
+    recent_requests[ip] = recent + [now]
+    return {"ok": True}
