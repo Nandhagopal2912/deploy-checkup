@@ -11,10 +11,10 @@ Tells you, in plain language, whether your deployed app is set up safely, and ex
 Requires Python 3.10 or newer.
 
 ```bash
-pipx install deploy-checkup
+uv tool install deploy-checkup
 ```
 
-`pipx` installs command-line tools in their own environment ([how to install pipx](https://pipx.pypa.io/stable/installation/)). `pip install deploy-checkup` works too.
+[uv](https://docs.astral.sh/uv/) installs command-line tools in their own environment. To try it once without installing anything, run `uvx deploy-checkup https://your-app.com`. `pipx install deploy-checkup` and `pip install deploy-checkup` work too.
 
 ## Usage
 
@@ -160,16 +160,17 @@ The exit code is the same as for the coloured report.
 
 ## Development
 
+The project uses [uv](https://docs.astral.sh/uv/):
+
 ```bash
 git clone https://github.com/Nandhagopal2912/deploy-checkup.git
 cd deploy-checkup
-python -m venv .venv
-.venv\Scripts\activate          # Windows; on macOS/Linux: source .venv/bin/activate
-pip install -e ".[dev]"
-pytest
+uv sync                         # creates .venv with the exact versions in uv.lock
+uv run pytest
+uv run deploy-checkup --help
 ```
 
-`-e` installs in editable mode, so code changes take effect without reinstalling. Re-run the install after changing `dependencies` or `[project.scripts]` in `pyproject.toml`.
+`uv sync` installs the project in editable mode plus the `dev` dependency group, so code changes take effect without reinstalling. `uv.lock` pins every version for development and CI only; people who install deploy-checkup still get the ranges from `pyproject.toml`. After changing dependencies, run `uv lock` and commit the updated `uv.lock`. `uv build` makes the wheel and source archive.
 
 Tests never touch the network. Each check receives an `httpx.Client`, and tests pass one built on `httpx.MockTransport`, which answers requests with fake responses. CI runs them on Python 3.10 and 3.13.
 

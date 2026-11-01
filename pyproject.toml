@@ -29,11 +29,10 @@ dependencies = [
     "rich >= 14,<16",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "pytest >=8",
-    "build",
-    "twine",
+    "twine>=6",
 ]
 
 [project.urls]
